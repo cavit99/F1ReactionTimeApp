@@ -73,7 +73,6 @@ const App = () => {
   const [reactionTime, setReactionTime] = useState(null);
   const [bestTime, setBestTime] = useState(null);
   const [grade, setGrade] = useState('');
-  const [isTapDisabled, setIsTapDisabled] = useState(false);
 
   const startTimeRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -114,7 +113,6 @@ const App = () => {
   const startSequence = async () => {
     resetSequence();
     setSequenceStarted(true);
-    setIsTapDisabled(true); // Disable taps during sequence
 
     try {
       // Illuminate lights one by one at one-second intervals
@@ -128,7 +126,6 @@ const App = () => {
         setLightsOn([false, false, false, false, false]);
         setReadyToTap(true);
         startTimeRef.current = Date.now();
-        setIsTapDisabled(false); // Enable taps
       }, randomDelay);
     } catch (error) {
       console.error('Error during light sequence:', error);
@@ -152,7 +149,7 @@ const App = () => {
 
   // Function to handle user taps
   const handleTap = () => {
-    if (isTapDisabled) return; // Prevent taps when disabled
+    if (!sequenceStarted) return; // Ignore taps if no sequence is running
 
     if (!readyToTap) {
       // User tapped too early - Jump Start
@@ -180,8 +177,6 @@ const App = () => {
     if (reaction > 0 && shouldInclude && (!bestTime || reaction < bestTime)) {
       saveBestTime(reaction);
     }
-
-    setIsTapDisabled(true); // Disable further taps until retry
   };
 
   // Function to reset the sequence
@@ -191,7 +186,6 @@ const App = () => {
     setReadyToTap(false);
     setReactionTime(null);
     setGrade('');
-    setIsTapDisabled(false);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -241,7 +235,6 @@ const App = () => {
       onPress={handleTap} 
       activeOpacity={1}
       delayPressIn={0}
-      disabled={isTapDisabled} // Disable tapping when necessary
     >
       <GridScreen lights={lightsOn} />
       <View style={styles.buttonContainer}>
@@ -249,7 +242,6 @@ const App = () => {
           <TouchableOpacity 
             style={styles.startButton} 
             onPress={startSequence}
-            disabled={sequenceStarted} // Prevent multiple starts
           >
             <Text style={styles.buttonText}>Start</Text>
           </TouchableOpacity>
