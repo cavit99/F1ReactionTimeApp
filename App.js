@@ -8,11 +8,12 @@ import {
   TouchableOpacity, 
   Text, 
   Alert,
-  Dimensions 
+  Dimensions,
+  Platform 
 } from 'react-native';
 import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Sound from 'react-native-sound'; // [Added] Import Sound
+import { Audio } from 'expo-av'; // Updated import
 
 // Configuration for grades and their corresponding feedback
 const GRADE_CONFIG = [
@@ -122,9 +123,19 @@ const App = () => {
   const touchLatencyDeductionRef = useRef(TOUCH_LATENCY_INITIAL);
   const sequenceStartTimeRef = useRef(0); // <-- Added ref
 
-  // [Added] Sound references
-  const f1lightSoundRef = useRef(null);
-  const penaltySoundRef = useRef(null);
+  // Audio references using expo-av
+  const f1lightSoundRef = useRef(new Audio.Sound());
+  const penaltySoundRef = useRef(new Audio.Sound());
+
+  // Function to load sounds using expo-av
+  const loadSounds = async () => {
+    try {
+      await f1lightSoundRef.current.loadAsync(require('./assets/F1lights.mp3'));
+      await penaltySoundRef.current.loadAsync(require('./assets/penalty.wav'));
+    } catch (error) {
+      console.log('Failed to load sounds', error);
+    }
+  };
 
   // Load best time on component mount
   useEffect(() => {
@@ -142,18 +153,7 @@ const App = () => {
 
     const subscription = Dimensions.addEventListener('change', handleOrientationChange);
 
-    // [Added] Initialize Sound objects
-    f1lightSoundRef.current = new Sound(require('./assets/F1lights.mp3'), Sound.MAIN_BUNDLE, (error) => {
-      if (error) {
-        console.log('Failed to load F1lights.mp3', error);
-      }
-    });
-
-    penaltySoundRef.current = new Sound(require('./assets/penalty.wav'), Sound.MAIN_BUNDLE, (error) => {
-      if (error) {
-        console.log('Failed to load penalty.wav', error);
-      }
-    });
+    loadSounds();
 
     return () => {
       if (timeoutRef.current) {
@@ -162,13 +162,9 @@ const App = () => {
       if (subscription && subscription.remove) {
         subscription.remove();
       }
-      // [Added] Release Sound objects
-      if (f1lightSoundRef.current) {
-        f1lightSoundRef.current.release();
-      }
-      if (penaltySoundRef.current) {
-        penaltySoundRef.current.release();
-      }
+      // Unload sounds
+      f1lightSoundRef.current.unloadAsync();
+      penaltySoundRef.current.unloadAsync();
     };
   }, []);
 
@@ -222,6 +218,7 @@ const App = () => {
 
       // Set a random delay before the user can tap
       const randomDelay = Math.random() * (MAX_RANDOM_DELAY - MIN_RANDOM_DELAY) + MIN_RANDOM_DELAY;
+      console.log(`Random Delay: ${randomDelay}`); // Log the random delay
 
       // Compute touch latency deduction
       if (randomDelay > TOUCH_LATENCY_THRESHOLD) {
@@ -232,6 +229,7 @@ const App = () => {
       } else {
         touchLatencyDeductionRef.current = TOUCH_LATENCY_INITIAL;
       }
+      console.log(`Touch Latency Deduction: ${touchLatencyDeductionRef.current}`); // Log the touch latency deduction
 
       sequenceRef.current = setTimeout(() => {
         setState(prevState => ({
@@ -251,27 +249,32 @@ const App = () => {
   // Helper function to illuminate a single light
   const illuminateLight = (index, delay) => {
     return new Promise((resolve) => {
-      timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = setTimeout(async () => {
         setState(prevState => {
           const newLights = [...prevState.lightsOn];
           newLights[index] = true;
           return { ...prevState, lightsOn: newLights };
         });
 
-        // [Added] Play F1 lights sound
-        if (f1lightSoundRef.current) {
-          f1lightSoundRef.current.stop(() => {
-            f1lightSoundRef.current.play((success) => {
-              if (!success) {
-                console.log('F1lights.mp3 playback failed');
-              }
-            });
-          });
+        // Play F1 lights sound using expo-av
+        try {
+          await f1lightSoundRef.current.replayAsync();
+        } catch (error) {
+          console.log('F1lights sound playback failed', error);
         }
 
         resolve();
       }, delay);
     });
+  };
+
+  // Handle penalty sound playback
+  const handlePenalitySound = async () => {
+    try {
+      await penaltySoundRef.current.replayAsync();
+    } catch (error) {
+      console.log('Penalty sound playback failed', error);
+    }
   };
 
   // Function to handle user taps
@@ -292,16 +295,8 @@ const App = () => {
       setState(prevState => ({ ...prevState, grade: 'Jump Start' }));
       Alert.alert('Jump Start!', "You went too early\nStewards wouldn't like it");
 
-      // [Added] Play penalty sound
-      if (penaltySoundRef.current) {
-        penaltySoundRef.current.stop(() => {
-          penaltySoundRef.current.play((success) => {
-            if (!success) {
-              console.log('penalty.wav playback failed');
-            }
-          });
-        });
-      }
+      // Play penalty sound
+      handlePenalitySound();
 
       setState(prevState => ({ ...prevState, sequenceStarted: false }));
       setState(prevState => ({ ...prevState, readyToTap: false }));
