@@ -1,6 +1,9 @@
 // components/GridScreen.js
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+const isPortrait = height > width;
 
 const GridScreen = ({ lights }) => {
   return (
@@ -21,15 +24,16 @@ const GridScreen = ({ lights }) => {
 
 const styles = StyleSheet.create({
   gridContainer: {
-    flexDirection: 'row',
+    flexDirection: isPortrait ? 'row' : 'column',
     justifyContent: 'space-around',
     marginTop: 50,
   },
   light: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginHorizontal: 10,
+    width: isPortrait ? width * 0.1 : height * 0.1,
+    height: isPortrait ? width * 0.1 : height * 0.1,
+    borderRadius: isPortrait ? width * 0.05 : height * 0.05,
+    marginHorizontal: isPortrait ? 10 : 0,
+    marginVertical: isPortrait ? 0 : 10,
     opacity: 0.8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

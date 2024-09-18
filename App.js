@@ -7,7 +7,8 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Text, 
-  Alert 
+  Alert,
+  Dimensions 
 } from 'react-native';
 import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -38,7 +39,7 @@ const GRADE_CONFIG = [
   {
     label: 'Excellent',
     condition: (time) => time >= 200 && time <= 250,
-    feedbackMessage: 'Excellent reaction! Top F1 Driver Level!',
+    feedbackMessage: 'Excellent reaction! Top F1 Driver Level.',
     feedbackColor: '#17a2b8', // Teal
     includeInBestTime: true,
   },
@@ -93,7 +94,7 @@ const LIGHT_DELAY = 1000;
 const MIN_RANDOM_DELAY = 200;
 const MAX_RANDOM_DELAY = 3000;
 
-const TOUCH_LATENCY = 50; // Added touch latency
+const TOUCH_LATENCY = 50; 
 
 const App = () => {
   // State variables
@@ -104,6 +105,7 @@ const App = () => {
     reactionTime: null,
     bestTime: null,
     grade: '',
+    isPortrait: Dimensions.get('window').height > Dimensions.get('window').width,
   };
 
   const [state, setState] = useState(initialState);
@@ -115,10 +117,20 @@ const App = () => {
   // Load best time on component mount
   useEffect(() => {
     loadBestTime();
+    const handleOrientationChange = () => {
+      setState(prevState => ({
+        ...prevState,
+        isPortrait: Dimensions.get('window').height > Dimensions.get('window').width,
+      }));
+    };
+
+    Dimensions.addEventListener('change', handleOrientationChange);
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      Dimensions.removeEventListener('change', handleOrientationChange);
     };
   }, []);
 
@@ -284,7 +296,7 @@ const App = () => {
       activeOpacity={1}
       testID="tap-area"
     >
-      <GridScreen lights={state.lightsOn} />
+      <GridScreen lights={state.lightsOn} isPortrait={state.isPortrait} />
       <View style={styles.buttonContainer}>
         {!state.sequenceStarted && !state.reactionTime && state.grade === '' && (
           <TouchableOpacity 
