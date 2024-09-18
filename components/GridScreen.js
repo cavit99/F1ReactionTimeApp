@@ -11,6 +11,7 @@ const GridScreen = ({ lights }) => {
           style={[
             styles.light,
             { backgroundColor: isOn ? '#ff0000' : '#800000' }, // Bright red when on, dark red when off
+            isOn ? styles.lightOn : styles.lightOff,
           ]}
         />
       ))}
@@ -28,9 +29,29 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#800000', // Default dark red
     marginHorizontal: 10,
     opacity: 0.8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 5, // For Android shadow
+  },
+  lightOn: {
+    // Additional styles when light is on
+    shadowColor: '#ff0000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  lightOff: {
+    // Additional styles when light is off
+    shadowColor: '#800000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });
 
