@@ -1,3 +1,4 @@
+//App.js
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -20,15 +21,15 @@ const GRADE_CONFIG = [
   },
   {
     label: 'Anticipatory',
-    condition: (time) => time > 0 && time < 100, // MIN_REACTION_TIME = 100ms
-    feedbackMessage: 'Your reaction was incredibly fast!',
-    feedbackColor: '#ffc107', // Yellow
+    condition: (time) => time > 0 && time < 100, 
+    feedbackMessage: 'Superhuman reaction. Really!',
+    feedbackColor: '#dc3545', // Red
     includeInBestTime: false,
   },
   {
     label: 'Extraordinary',
     condition: (time) => time >= 100 && time <= 199,
-    feedbackMessage: 'Extraordinary reaction!',
+    feedbackMessage: 'Extraordinary reaction! Beyond typical F1 driver level',
     feedbackColor: '#28a745', // Green
     includeInBestTime: true,
   },
@@ -42,15 +43,15 @@ const GRADE_CONFIG = [
   {
     label: 'Very Good',
     condition: (time) => time >= 251 && time <= 270,
-    feedbackMessage: 'Very Good! Equivalent to a decent reaction from an F1 driver',
+    feedbackMessage: 'Very Good! Equivalent to a good reaction from an F1 driver',
     feedbackColor: '#17a2b8', // Teal
     includeInBestTime: true,
   },
   {
     label: 'Good',
     condition: (time) => time >= 271 && time <= 300,
-    feedbackMessage: 'Good, equivalent to a slow reaction from an F1 driver',
-    feedbackColor: '#ffc107', // Yellow
+    feedbackMessage: 'Good, equivalent to a decent reaction from an F1 driver',
+    feedbackColor: '#17a2b8', // Teal
     includeInBestTime: true,
   },
   {
