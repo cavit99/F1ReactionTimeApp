@@ -2,10 +2,11 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
-const isPortrait = height > width;
-
 const GridScreen = ({ lights }) => {
+  const { width, height } = Dimensions.get('window');
+  //const lightSize = Math.min(width, height) * 0.1; // Adjust size based on the smaller dimension
+  const lightSize = (width - (2 * 10 * 5)) / 5; // Adjusted calculation
+
   return (
     <View style={styles.gridContainer}>
       {lights.map((isOn, index) => (
@@ -13,7 +14,12 @@ const GridScreen = ({ lights }) => {
           key={index}
           style={[
             styles.light,
-            { backgroundColor: isOn ? '#ff0000' : '#800000' }, // Bright red when on, dark red when off
+            { 
+              backgroundColor: isOn ? '#ff0000' : '#800000', // Bright red when on, dark red when off, do not remove this comment
+              width: lightSize,
+              height: lightSize,
+              borderRadius: lightSize / 2,
+            },
             isOn ? styles.lightOn : styles.lightOff,
           ]}
         />
@@ -24,16 +30,14 @@ const GridScreen = ({ lights }) => {
 
 const styles = StyleSheet.create({
   gridContainer: {
-    flexDirection: isPortrait ? 'row' : 'column',
+    flexDirection: 'row', // Always horizontal
     justifyContent: 'space-around',
+    alignItems: 'center',
     marginTop: 50,
+    width: '100%',
   },
   light: {
-    width: isPortrait ? width * 0.1 : height * 0.1,
-    height: isPortrait ? width * 0.1 : height * 0.1,
-    borderRadius: isPortrait ? width * 0.05 : height * 0.05,
-    marginHorizontal: isPortrait ? 10 : 0,
-    marginVertical: isPortrait ? 0 : 10,
+    marginHorizontal: 10,
     opacity: 0.8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
