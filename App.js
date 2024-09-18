@@ -26,30 +26,51 @@ const GRADE_CONFIG = [
     includeInBestTime: false,
   },
   {
-    label: 'Excellent',
+    label: 'Extraordinary',
     condition: (time) => time >= 100 && time <= 199,
-    feedbackMessage: 'Super quick reaction!',
+    feedbackMessage: 'Extraordinary reaction!',
     feedbackColor: '#28a745', // Green
     includeInBestTime: true,
   },
   {
-    label: 'Very Good',
+    label: 'Excellent',
     condition: (time) => time >= 200 && time <= 250,
-    feedbackMessage: 'Pretty fast.',
+    feedbackMessage: 'Excellent reaction! Top F1 Driver Level!',
     feedbackColor: '#17a2b8', // Teal
     includeInBestTime: true,
   },
   {
+    label: 'Very Good',
+    condition: (time) => time >= 251 && time <= 270,
+    feedbackMessage: 'Very Good! Equivalent to a decent reaction from an F1 driver',
+    feedbackColor: '#17a2b8', // Teal
+    includeInBestTime: true,
+  },
+  {
+    label: 'Good',
+    condition: (time) => time >= 271 && time <= 300,
+    feedbackMessage: 'Good, equivalent to a slow reaction from an F1 driver',
+    feedbackColor: '#ffc107', // Yellow
+    includeInBestTime: true,
+  },
+  {
     label: 'OK',
-    condition: (time) => time >= 251 && time <= 300,
-    feedbackMessage: 'Decent, but can get better.',
+    condition: (time) => time >= 301 && time <= 350,
+    feedbackMessage: 'OK, but slower than F1 driver level',
     feedbackColor: '#ffc107', // Yellow
     includeInBestTime: true,
   },
   {
     label: 'Slow',
-    condition: (time) => time > 300,
-    feedbackMessage: 'Needs improvement.',
+    condition: (time) => time >= 351 && time <= 400,
+    feedbackMessage: 'Needs improvement',
+    feedbackColor: '#ffc107', // Yellow
+    includeInBestTime: true,
+  },
+  {
+    label: 'Very Slow',
+    condition: (time) => time > 401,
+    feedbackMessage: 'Were you sleeping? Concentrate!',
     feedbackColor: '#fd7e14', // Orange
     includeInBestTime: true,
   },
