@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -10,6 +9,62 @@ import {
 import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Configuration for grades and their corresponding feedback
+const GRADE_CONFIG = [
+  {
+    label: 'Jump Start',
+    condition: (time) => time < 0,
+    feedbackMessage: 'You tapped too soon!',
+    feedbackColor: '#dc3545', // Red
+    includeInBestTime: false,
+  },
+  {
+    label: 'Anticipatory',
+    condition: (time) => time > 0 && time < 100, // MIN_REACTION_TIME = 100ms
+    feedbackMessage: 'Your reaction was incredibly fast!',
+    feedbackColor: '#ffc107', // Yellow
+    includeInBestTime: false,
+  },
+  {
+    label: 'Excellent',
+    condition: (time) => time >= 100 && time <= 199,
+    feedbackMessage: 'Super quick reaction!',
+    feedbackColor: '#28a745', // Green
+    includeInBestTime: true,
+  },
+  {
+    label: 'Very Good',
+    condition: (time) => time >= 200 && time <= 250,
+    feedbackMessage: 'Pretty fast.',
+    feedbackColor: '#17a2b8', // Teal
+    includeInBestTime: true,
+  },
+  {
+    label: 'OK',
+    condition: (time) => time >= 251 && time <= 300,
+    feedbackMessage: 'Decent, but can get better.',
+    feedbackColor: '#ffc107', // Yellow
+    includeInBestTime: true,
+  },
+  {
+    label: 'Slow',
+    condition: (time) => time > 300,
+    feedbackMessage: 'Needs improvement.',
+    feedbackColor: '#fd7e14', // Orange
+    includeInBestTime: true,
+  },
+];
+
+// Determine grade based on reaction time using GRADE_CONFIG
+const determineGrade = (time) => {
+  for (let grade of GRADE_CONFIG) {
+    if (grade.condition(time)) {
+      return grade.label;
+    }
+  }
+  return '';
+};
+
 const App = () => {
   // State variables
   const [lightsOn, setLightsOn] = useState([false, false, false, false, false]);
@@ -18,6 +73,8 @@ const App = () => {
   const [reactionTime, setReactionTime] = useState(null);
   const [bestTime, setBestTime] = useState(null);
   const [grade, setGrade] = useState('');
+  const [isTapDisabled, setIsTapDisabled] = useState(false);
+
   const startTimeRef = useRef(null);
   const timeoutRef = useRef(null);
 
@@ -36,7 +93,7 @@ const App = () => {
     try {
       const value = await AsyncStorage.getItem('@best_time');
       if (value !== null) {
-        setBestTime(parseInt(value));
+        setBestTime(parseInt(value, 10));
       }
     } catch (e) {
       console.error('Failed to load best time.', e);
@@ -57,50 +114,74 @@ const App = () => {
   const startSequence = async () => {
     resetSequence();
     setSequenceStarted(true);
-    // Illuminate lights one by one at one-second intervals
-    for (let i = 0; i < 5; i++) {
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          setLightsOn((prev) => {
-            const newLights = [...prev];
-            newLights[i] = true;
-            return newLights;
-          });
-          resolve();
-        }, 1000);
-      });
-    }
+    setIsTapDisabled(true); // Disable taps during sequence
 
-    // Random delay between 0.2 and 3 seconds
-    const randomDelay = Math.random() * (3000 - 200) + 200;
-    timeoutRef.current = setTimeout(() => {
-      setLightsOn([false, false, false, false, false]);
-      setReadyToTap(true);
-      startTimeRef.current = Date.now();
-    }, randomDelay);
+    try {
+      // Illuminate lights one by one at one-second intervals
+      for (let i = 0; i < 5; i++) {
+        await illuminateLight(i, 1000);
+      }
+
+      // Random delay between 0.2 and 3 seconds
+      const randomDelay = Math.random() * (3000 - 200) + 200;
+      timeoutRef.current = setTimeout(() => {
+        setLightsOn([false, false, false, false, false]);
+        setReadyToTap(true);
+        startTimeRef.current = Date.now();
+        setIsTapDisabled(false); // Enable taps
+      }, randomDelay);
+    } catch (error) {
+      console.error('Error during light sequence:', error);
+      resetSequence(); // Reset in case of any unexpected errors
+    }
+  };
+
+  // Helper function to illuminate a single light
+  const illuminateLight = (index, delay) => {
+    return new Promise((resolve) => {
+      timeoutRef.current = setTimeout(() => {
+        setLightsOn((prev) => {
+          const newLights = [...prev];
+          newLights[index] = true;
+          return newLights;
+        });
+        resolve();
+      }, delay);
+    });
   };
 
   // Function to handle user taps
   const handleTap = () => {
+    if (isTapDisabled) return; // Prevent taps when disabled
+
     if (!readyToTap) {
-      // User tapped too early - Anticipatory (Jump Start)
+      // User tapped too early - Jump Start
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
       setReactionTime(-1); // Indicate jump start with -1
-      setGrade('Anticipatory');
-      Alert.alert('Too Soon!', 'You tapped before the lights went out.');
-      resetSequence();
+      setGrade('Jump Start');
+      Alert.alert('Jump Start!', 'You tapped before the lights signaled.');
+      resetSequence(); // Ensure the sequence resets
       return;
     }
+
     const endTime = Date.now();
     const reaction = endTime - startTimeRef.current;
     setReactionTime(reaction);
     setReadyToTap(false);
-    setGrade(determineGrade(reaction));
-    if (!bestTime || reaction < bestTime) {
+    const assignedGrade = determineGrade(reaction);
+    setGrade(assignedGrade);
+
+    // Find grade configuration to decide on saving best time
+    const gradeConfig = GRADE_CONFIG.find((g) => g.label === assignedGrade);
+    const shouldInclude = gradeConfig ? gradeConfig.includeInBestTime : false;
+
+    if (reaction > 0 && shouldInclude && (!bestTime || reaction < bestTime)) {
       saveBestTime(reaction);
     }
+
+    setIsTapDisabled(true); // Disable further taps until retry
   };
 
   // Function to reset the sequence
@@ -110,19 +191,10 @@ const App = () => {
     setReadyToTap(false);
     setReactionTime(null);
     setGrade('');
+    setIsTapDisabled(false);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-  };
-
-  // Function to determine grade based on reaction time
-  const determineGrade = (time) => {
-    if (time < 150) return 'Anticipatory'; // Just in case
-    if (time >= 150 && time <= 199) return 'Excellent';
-    if (time >= 200 && time <= 250) return 'Very Good';
-    if (time >= 251 && time <= 300) return 'OK';
-    if (time > 300) return 'Slow';
-    return '';
   };
 
   // Function to render feedback based on grade
@@ -131,30 +203,13 @@ const App = () => {
 
     let feedbackMessage = '';
     let feedbackColor = '';
+    let showRetry = true;
 
-    switch (grade) {
-      case 'Anticipatory':
-        feedbackMessage = 'Too fast; likely guessed the start.';
-        feedbackColor = '#dc3545'; // Red
-        break;
-      case 'Excellent':
-        feedbackMessage = 'Super quick reaction!';
-        feedbackColor = '#28a745'; // Green
-        break;
-      case 'Very Good':
-        feedbackMessage = 'Pretty fast.';
-        feedbackColor = '#17a2b8'; // Teal
-        break;
-      case 'OK':
-        feedbackMessage = 'Decent, but can get better.';
-        feedbackColor = '#ffc107'; // Yellow
-        break;
-      case 'Slow':
-        feedbackMessage = 'Needs improvement.';
-        feedbackColor = '#fd7e14'; // Orange
-        break;
-      default:
-        feedbackMessage = '';
+    const gradeEntry = GRADE_CONFIG.find((g) => g.label === grade);
+    if (gradeEntry) {
+      feedbackMessage = gradeEntry.feedbackMessage;
+      feedbackColor = gradeEntry.feedbackColor;
+      showRetry = grade !== 'Jump Start'; // Do not show retry for Jump Start
     }
 
     return (
@@ -165,17 +220,17 @@ const App = () => {
         {reactionTime === -1 && (
           <Text style={styles.resultText}>Jump Start Detected!</Text>
         )}
-        {bestTime && reactionTime !== -1 && (
+        {bestTime && reactionTime > 0 && (
           <Text style={styles.resultText}>Best Time: {bestTime} ms</Text>
         )}
-        {grade === 'Anticipatory' ? (
-          <Text style={[styles.feedbackText, { color: feedbackColor }]}>{feedbackMessage}</Text>
-        ) : (
-          <Text style={[styles.feedbackText, { color: feedbackColor }]}>{grade}: {feedbackMessage}</Text>
+        <Text style={[styles.feedbackText, { color: feedbackColor }]}>
+          {feedbackMessage}
+        </Text>
+        {showRetry && (
+          <TouchableOpacity style={styles.retryButton} onPress={startSequence}>
+            <Text style={styles.buttonText}>Retry</Text>
+          </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.retryButton} onPress={startSequence}>
-          <Text style={styles.buttonText}>Retry</Text>
-        </TouchableOpacity>
       </View>
     );
   };
@@ -186,11 +241,16 @@ const App = () => {
       onPress={handleTap} 
       activeOpacity={1}
       delayPressIn={0}
+      disabled={isTapDisabled} // Disable tapping when necessary
     >
       <GridScreen lights={lightsOn} />
       <View style={styles.buttonContainer}>
         {!sequenceStarted && !reactionTime && grade === '' && (
-          <TouchableOpacity style={styles.startButton} onPress={startSequence}>
+          <TouchableOpacity 
+            style={styles.startButton} 
+            onPress={startSequence}
+            disabled={sequenceStarted} // Prevent multiple starts
+          >
             <Text style={styles.buttonText}>Start</Text>
           </TouchableOpacity>
         )}
@@ -248,4 +308,5 @@ const styles = StyleSheet.create({
   },
 });
 
+export { determineGrade };
 export default App;

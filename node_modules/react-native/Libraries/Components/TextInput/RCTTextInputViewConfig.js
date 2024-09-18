@@ -31,12 +31,6 @@ const RCTTextInputViewConfig = {
         captured: 'onChangeCapture',
       },
     },
-    topContentSizeChange: {
-      phasedRegistrationNames: {
-        captured: 'onContentSizeChangeCapture',
-        bubbled: 'onContentSizeChange',
-      },
-    },
     topEndEditing: {
       phasedRegistrationNames: {
         bubbled: 'onEndEditing',
@@ -82,20 +76,14 @@ const RCTTextInputViewConfig = {
     },
   },
   directEventTypes: {
-    topTextInput: {
-      registrationName: 'onTextInput',
-    },
-    topKeyPressSync: {
-      registrationName: 'onKeyPressSync',
-    },
     topScroll: {
       registrationName: 'onScroll',
     },
     topSelectionChange: {
       registrationName: 'onSelectionChange',
     },
-    topChangeSync: {
-      registrationName: 'onChangeSync',
+    topContentSizeChange: {
+      registrationName: 'onContentSizeChange',
     },
   },
   validAttributes: {
@@ -162,9 +150,6 @@ const RCTTextInputViewConfig = {
       onSelectionChange: true,
       onContentSizeChange: true,
       onScroll: true,
-      onChangeSync: true,
-      onKeyPressSync: true,
-      onTextInput: true,
     }),
   },
 };
