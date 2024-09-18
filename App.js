@@ -13,7 +13,7 @@ import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuration for grades and their corresponding feedback
-cconst GRADE_CONFIG = [
+const GRADE_CONFIG = [
   {
     label: 'Jump Start',
     condition: (time) => time < 0,
@@ -92,6 +92,8 @@ const determineGrade = (time) => {
 const LIGHT_DELAY = 1000;
 const MIN_RANDOM_DELAY = 200;
 const MAX_RANDOM_DELAY = 3000;
+
+const TOUCH_LATENCY = 50; // Added touch latency
 
 const App = () => {
   // State variables
@@ -202,7 +204,7 @@ const App = () => {
     }
 
     const endTime = Date.now();
-    const reaction = endTime - startTimeRef.current;
+    const reaction = endTime - startTimeRef.current - TOUCH_LATENCY; // Adjusted for touch latency
     setState(prevState => ({ ...prevState, reactionTime: reaction }));
     setState(prevState => ({ ...prevState, readyToTap: false }));
 
