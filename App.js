@@ -64,13 +64,13 @@ const GRADE_CONFIG = [
   {
     label: 'Slow',
     condition: (time) => time >= 351 && time <= 400,
-    feedbackMessage: 'Needs improvement',
+    feedbackMessage: 'Not bad but needs improvement',
     feedbackColor: '#ffc107', // Yellow
     includeInBestTime: true,
   },
   {
     label: 'Very Slow',
-    condition: (time) => time > 401,
+    condition: (time) => time > 400, 
     feedbackMessage: 'Were you sleeping? Concentrate!',
     feedbackColor: '#fd7e14', // Orange
     includeInBestTime: true,
