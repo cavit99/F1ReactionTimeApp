@@ -4,7 +4,11 @@
     "slug": "f1reactiontimeapp",
     "version": "1.0.0",
     "sdkVersion": "51.0.0",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "orientation": "default",
     "icon": "./assets/icon.png",
     "splash": {
@@ -15,10 +19,12 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.caviterginsoy.f1reactiontimeapp" 
+      "bundleIdentifier": "com.caviterginsoy.f1reactiontimeapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,6 +35,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "628179b3-57e1-4fd3-a023-f25f944ee9da"
+      }
     }
   }
 }
