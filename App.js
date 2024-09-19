@@ -479,6 +479,7 @@ const App = () => {
     console.log(`Running on: ${Platform.OS}`);
   };
 
+  // Modify the return statement to adjust layout based on orientation
   return (
     <TouchableOpacity 
       style={[
@@ -489,10 +490,14 @@ const App = () => {
       activeOpacity={1}
       testID="tap-area"
     >
-      <GridScreen 
-        lights={state.lightsOn} 
-        isPortrait={state.isPortrait} // Pass isPortrait prop
-      />
+      {/* Position GridScreen differently based on orientation */}
+      <View style={styles.gridScreenWrapper}>
+        <GridScreen 
+          lights={state.lightsOn} 
+          isPortrait={state.isPortrait} // Pass isPortrait prop
+        />
+      </View>
+      
       <View style={[
         styles.buttonContainer, 
         state.isPortrait ? styles.portraitButtons : styles.landscapeButtons
@@ -514,7 +519,7 @@ const App = () => {
   );
 };
 
-// Stylesheet
+// Update the StyleSheet to include new styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -527,11 +532,19 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   landscapeContainer: {
-    flexDirection: 'column', // Keep as 'column' to prevent affecting GridScreen
+    flexDirection: 'column', 
+    alignItems: 'flex-start', // Align items to the top
+    justifyContent: 'space-between', // Space between GridScreen and buttons/feedback
+  },
+  gridScreenWrapper: {
+    flex: 1,
+    justifyContent: 'flex-start', // Align GridScreen to the top in landscape
+    marginBottom: 20, // Add some spacing if needed
   },
   buttonContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1, // Take remaining space
   },
   portraitButtons: {
     marginTop: 50,
@@ -555,8 +568,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   resetButton: {
-    width: 40, 
-    height: 40, 
+    width: 55, 
+    height: 44, 
     justifyContent: 'center', 
     alignItems: 'center', 
     marginLeft: 20, 
