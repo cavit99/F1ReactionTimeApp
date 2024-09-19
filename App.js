@@ -9,11 +9,18 @@ import {
   Text, 
   Alert,
   Dimensions,
-  Platform 
+  Platform,
+  Image,
+  Appearance,
+  useColorScheme
 } from 'react-native';
 import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av'; // Updated import
+import { Audio } from 'expo-av'; 
+import { lightStyles, darkStyles } from './styles'; 
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 // Configuration for grades and their corresponding feedback
 const GRADE_CONFIG = [
@@ -48,7 +55,7 @@ const GRADE_CONFIG = [
   {
     label: 'Very Good',
     condition: (time) => time >= 251 && time <= 270,
-    feedbackMessage: 'Very Good!\nLikea good reaction from an F1 driver',
+    feedbackMessage: 'Very Good!\nLike a good reaction from an F1 driver',
     feedbackColor: '#17a2b8', // Teal
     includeInBestTime: true,
   },
@@ -97,7 +104,7 @@ const MIN_RANDOM_DELAY = 200;
 const MAX_RANDOM_DELAY = 3000;
 
 const TOUCH_LATENCY_INITIAL = 60; // Initial touch latency in ms
-const TOUCH_LATENCY_THRESHOLD = 2500; // Threshold in ms to start ramping down
+const TOUCH_LATENCY_THRESHOLD = 2300; // Threshold in ms to start ramping down
 
 const IGNORE_TAP_DELAY_MS = 500;
 
@@ -116,6 +123,7 @@ const App = () => {
   const [state, setState] = useState(initialState);
   const [bestTime, setBestTime] = useState(null); // Separate state for bestTime
   const [isNewBestTime, setIsNewBestTime] = useState(false); // New state variable
+  const [soundsLoaded, setSoundsLoaded] = useState(false); // New state variable to track sound loading
 
   const startTimeRef = useRef(0);
   const timeoutRef = useRef(null);
@@ -123,17 +131,56 @@ const App = () => {
   const touchLatencyDeductionRef = useRef(TOUCH_LATENCY_INITIAL);
   const sequenceStartTimeRef = useRef(0); // <-- Added ref
 
+  // Ref to track if a sequence is active
+  const isSequenceActiveRef = useRef(false); // <-- Added ref
+
   // Audio references using expo-av
   const f1lightSoundRef = useRef(new Audio.Sound());
   const penaltySoundRef = useRef(new Audio.Sound());
+
+  // Theme state
+  const colorScheme = useColorScheme();
+  const [theme, setTheme] = useState(colorScheme);
+  const [isManualTheme, setIsManualTheme] = useState(false); // New state variable
+
+  useEffect(() => {
+    // Log the system's default color scheme
+    console.log(`System default color scheme: ${Appearance.getColorScheme()}`);
+    
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      if (!isManualTheme) { // Only update theme if not manually set
+        setTheme(colorScheme);
+      }
+    });
+
+    logDeviceInfo();
+
+    return () => subscription.remove();
+  }, []); // Empty dependency array to ensure it only runs once
+
+  // Modify the toggleTheme function to log when it's called
+  const toggleTheme = () => {
+    console.log('Toggle theme button pressed');
+    setTheme(prevTheme => {
+      const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
+      setIsManualTheme(true); // User has manually selected theme
+      console.log(`Theme toggled to: ${newTheme}`);
+      return newTheme;
+    });
+  };
+
+  // Determine styles based on theme
+  const currentStyles = theme === 'dark' ? darkStyles : lightStyles;
 
   // Function to load sounds using expo-av
   const loadSounds = async () => {
     try {
       await f1lightSoundRef.current.loadAsync(require('./assets/F1lights.mp3'));
       await penaltySoundRef.current.loadAsync(require('./assets/penalty.wav'));
+      setSoundsLoaded(true); // Update state when sounds are loaded
     } catch (error) {
       console.log('Failed to load sounds', error);
+      Alert.alert('Error', 'Failed to load sounds. Please restart the app.');
     }
   };
 
@@ -153,11 +200,14 @@ const App = () => {
 
     const subscription = Dimensions.addEventListener('change', handleOrientationChange);
 
-    loadSounds();
+    loadSounds(); // Start loading sounds
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (sequenceRef.current) {
+        clearTimeout(sequenceRef.current);
       }
       if (subscription && subscription.remove) {
         subscription.remove();
@@ -204,8 +254,14 @@ const App = () => {
 
   // Function to start the light sequence
   const startSequence = async () => {
+    if (!soundsLoaded) {
+      Alert.alert('Loading', 'Sounds are still loading. Please wait.');
+      return;
+    }
+
     resetSequence(false); // Pass false to avoid resetting bestTime
     setState(prevState => ({ ...prevState, sequenceStarted: true }));
+    isSequenceActiveRef.current = true; // <-- Set ref to true
 
     // Record the start time of the sequence using the ref
     sequenceStartTimeRef.current = performance.now();
@@ -248,7 +304,7 @@ const App = () => {
 
   // Helper function to illuminate a single light
   const illuminateLight = (index, delay) => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       timeoutRef.current = setTimeout(async () => {
         setState(prevState => {
           const newLights = [...prevState.lightsOn];
@@ -258,7 +314,11 @@ const App = () => {
 
         // Play F1 lights sound using expo-av
         try {
-          await f1lightSoundRef.current.replayAsync();
+          if (soundsLoaded) {
+            await f1lightSoundRef.current.replayAsync();
+          } else {
+            console.log('F1 lights sound is not loaded yet.');
+          }
         } catch (error) {
           console.log('F1lights sound playback failed', error);
         }
@@ -269,9 +329,13 @@ const App = () => {
   };
 
   // Handle penalty sound playback
-  const handlePenalitySound = async () => {
+  const handlePenaltySound = async () => {
     try {
-      await penaltySoundRef.current.replayAsync();
+      if (soundsLoaded) {
+        await penaltySoundRef.current.replayAsync();
+      } else {
+        console.log('Penalty sound is not loaded yet.');
+      }
     } catch (error) {
       console.log('Penalty sound playback failed', error);
     }
@@ -279,30 +343,41 @@ const App = () => {
 
   // Function to handle user taps
   const handleTap = () => {
-    if (!state.sequenceStarted) return; // Ignore taps if no sequence is running
+    // Check if a sequence is active using the ref
+    if (!isSequenceActiveRef.current) return; // Ignore taps if no sequence is active
 
     const currentTime = performance.now();
-    if (currentTime - sequenceStartTimeRef.current < IGNORE_TAP_DELAY_MS) {
-      // Ignore the tap if likely mistaken at the start
+    const sequenceStartTime = sequenceStartTimeRef.current;
+
+    if (currentTime - sequenceStartTime < IGNORE_TAP_DELAY_MS) {
+      // Ignore the tap if within the initial ignore delay
       return;
     }
 
     if (!state.readyToTap) {
       // User tapped too early - Jump Start
       clearTimeouts(); // Clear all ongoing timeouts
-      setState(prevState => ({ ...prevState, lightsOn: [false, false, false, false, false] }));
-      setState(prevState => ({ ...prevState, reactionTime: -1 }));
-      setState(prevState => ({ ...prevState, grade: 'Jump Start' }));
+      setState(prevState => ({ 
+        ...prevState, 
+        lightsOn: [false, false, false, false, false],
+        reactionTime: -1,
+        grade: 'Jump Start',
+        sequenceStarted: false,
+        readyToTap: false
+      }));
+      
+      // Set the ref to false since the sequence has ended
+      isSequenceActiveRef.current = false;
+
       Alert.alert('Jump Start!', "You went too early\nStewards wouldn't like it");
 
       // Play penalty sound
-      handlePenalitySound();
+      handlePenaltySound();
 
-      setState(prevState => ({ ...prevState, sequenceStarted: false }));
-      setState(prevState => ({ ...prevState, readyToTap: false }));
       return;
     }
 
+    // If readyToTap is true, process the reaction time
     const endTime = performance.now();
     const reaction = endTime - startTimeRef.current;
 
@@ -313,8 +388,15 @@ const App = () => {
     // Ensure reaction time is non-negative
     const validReaction = adjustedReaction >= 0 ? adjustedReaction : 0;
 
-    setState(prevState => ({ ...prevState, reactionTime: Math.round(validReaction) }));
-    setState(prevState => ({ ...prevState, readyToTap: false }));
+    setState(prevState => ({ 
+      ...prevState, 
+      reactionTime: Math.round(validReaction),
+      readyToTap: false,
+      sequenceStarted: false
+    }));
+
+    // Set the ref to false since the sequence has ended
+    isSequenceActiveRef.current = false;
 
     const assignedGrade = determineGrade(validReaction);
     setState(prevState => ({ ...prevState, grade: assignedGrade }));
@@ -348,7 +430,7 @@ const App = () => {
   };
 
   // Function to reset the sequence
-  // Added `preserveBestTime` parameter to control whether to reset bestTime
+  // Added preserveBestTime` parameter to control whether to reset bestTime
   const resetSequence = (preserveBestTime = true) => {
     if (preserveBestTime) {
       setState(initialState);
@@ -360,140 +442,173 @@ const App = () => {
     }
     clearTimeouts(); // Ensure all timeouts are cleared
     startTimeRef.current = 0; // Reset the start time
+    isSequenceActiveRef.current = false; // Ensure the ref is reset
   };
 
-  // Function to render feedback based on grade
-  const renderFeedback = () => {
-    if (!state.grade) return null;
-
-    let feedbackMessage = '';
-    let feedbackColor = '';
-    let showRetry = true;
-
-    const gradeEntry = GRADE_CONFIG.find((g) => g.label === state.grade);
-    if (gradeEntry) {
-      feedbackMessage = gradeEntry.feedbackMessage;
-      feedbackColor = gradeEntry.feedbackColor;
-      showRetry = true; 
+  // Function to reset best time
+  const resetBestTime = async () => {
+    try {
+      await AsyncStorage.removeItem('@best_time');
+      setBestTime(null);
+      Alert.alert('Success', 'Best time has been reset.');
+    } catch (e) {
+      console.error('Failed to reset best time.', e);
+      Alert.alert('Error', 'Failed to reset best time.');
     }
+  };
 
-    return (
-      <View style={styles.resultContainer}>
-        {state.reactionTime !== null && state.reactionTime !== -1 && (
-          <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
-        )}
-        {state.reactionTime === -1 && (
-          <Text style={styles.resultText}>Jump Start Detected!</Text>
-        )}
-        {bestTime && state.reactionTime > 0 && (
+  // New component for reaction time and best time
+  const ReactionTimeDisplay = () => (
+    <>
+      {state.reactionTime !== null && state.reactionTime !== -1 && (
+        <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>
+          Your Reaction Time: {state.reactionTime} ms
+        </Text>
+      )}
+      {state.reactionTime === -1 && (
+        <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>
+          Jump Start Detected!
+        </Text>
+      )}
+      {bestTime && state.reactionTime > 0 && (
+        <View style={currentStyles.bestTimeContainer}>
           <Text
             style={[
-              styles.resultText,
-              isNewBestTime ? styles.newBestTimeText : null
+              currentStyles.resultText,
+              isNewBestTime ? currentStyles.newBestTimeText : null,
+              { color: theme === 'dark' ? '#fff' : '#000' }
             ]}
           >
             Best Time: {bestTime} ms
           </Text>
-        )}
-        <Text style={[styles.feedbackText, { color: feedbackColor }]}>
-          {feedbackMessage}
-        </Text>
-        {showRetry && (
-          <TouchableOpacity style={styles.retryButton} onPress={startSequence}>
-            <Text style={styles.buttonText}>Retry</Text>
+          <TouchableOpacity 
+            style={currentStyles.resetButton} 
+            onPress={resetBestTime}
+          >
+            <Image 
+              source={require('./assets/icons8-reset-100.png')} 
+              style={currentStyles.resetButtonImage} 
+            />
           </TouchableOpacity>
-        )}
-      </View>
-    );
+        </View>
+      )}
+    </>
+  );
+
+  // New component for retry button
+  const RetryButton = ({ style }) => (
+    <TouchableOpacity style={style} onPress={startSequence}>
+      <Text style={currentStyles.buttonText}>Retry</Text>
+    </TouchableOpacity>
+  );
+
+  // Modified renderFeedback function
+  const renderFeedback = () => {
+    if (!state.grade) return null;
+  
+    const gradeEntry = GRADE_CONFIG.find((g) => g.label === state.grade);
+    if (!gradeEntry) return null;
+
+    const { feedbackMessage, feedbackColor } = gradeEntry;
+  
+    if (state.isPortrait) {
+      // Portrait Layout
+      return (
+        <View style={currentStyles.resultContainer}>
+          <ReactionTimeDisplay />
+          <Text style={[currentStyles.feedbackText, { color: feedbackColor }]}>
+            {feedbackMessage}
+          </Text>
+          <RetryButton style={currentStyles.retryButton} />
+        </View>
+      );
+    } else {
+      // Landscape Layout
+      return (
+        <View style={currentStyles.landscapeFeedbackContainer}>
+          <View style={currentStyles.feedbackTextContainer}>
+            <ReactionTimeDisplay />
+            <Text style={[currentStyles.feedbackText, { color: feedbackColor }]}>
+              {feedbackMessage}
+            </Text>
+          </View>
+          <RetryButton style={currentStyles.retryButtonLandscape} />
+        </View>
+      );
+    }
   };
 
+  const logDeviceInfo = () => {
+    console.log(`Running on: ${Platform.OS}`);
+  };
+
+  useEffect(() => {
+    const hideSplashScreen = async () => {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds delay
+      await SplashScreen.hideAsync();
+    };
+
+    hideSplashScreen();
+  }, []);
+
+  // Modify the return statement to adjust layout based on orientation
   return (
-    <TouchableOpacity 
-      style={[styles.container, state.isPortrait ? styles.portraitContainer : styles.landscapeContainer]} 
-      onPress={handleTap} 
-      activeOpacity={1}
-      testID="tap-area"
-    >
-      <GridScreen lights={state.lightsOn} />
-      <View style={[styles.buttonContainer, state.isPortrait ? styles.portraitButtons : styles.landscapeButtons]}>
+    <View style={[
+      currentStyles.container, 
+      state.isPortrait ? currentStyles.portraitContainer : currentStyles.landscapeContainer
+    ]}>
+      {/* Theme Toggle Button */}
+      {!state.sequenceStarted && (
+        <TouchableOpacity 
+          style={[
+            currentStyles.themeToggleButton,
+            { zIndex: 3 } // Increased zIndex to ensure it's on top
+          ]} 
+          onPress={toggleTheme}
+          activeOpacity={0.7}
+        >
+          <Text style={currentStyles.themeToggleText}>
+            {theme === 'dark' ? '🌞' : '🌜'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity 
+        style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+        onPress={handleTap} 
+        activeOpacity={1}
+        testID="tap-area"
+        disabled={!state.sequenceStarted} // Disable when sequence hasn't started
+      >
+        <View style={currentStyles.gridScreenWrapper}>
+          <GridScreen 
+            lights={state.lightsOn} 
+            isPortrait={state.isPortrait}
+          />
+        </View>
+      </TouchableOpacity>
+      
+      <View style={[
+        currentStyles.buttonContainer, 
+        state.isPortrait ? currentStyles.portraitButtons : currentStyles.landscapeButtons,
+        { zIndex: 2 } // Increased zIndex to ensure buttons are above the tap area
+      ]}>
         {!state.sequenceStarted && !state.reactionTime && state.grade === '' && (
           <TouchableOpacity 
-            style={styles.startButton} 
+            style={state.isPortrait ? currentStyles.startButton : currentStyles.startButtonLandscape} 
             onPress={startSequence}
+            disabled={!soundsLoaded}
           >
-            <Text style={styles.buttonText}>Start</Text>
+            <Text style={currentStyles.buttonText}>
+              {soundsLoaded ? 'Start' : 'Loading...'}
+            </Text>
           </TouchableOpacity>
         )}
         {renderFeedback()}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
-
-// Stylesheet
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  portraitContainer: {
-    flexDirection: 'column',
-  },
-  landscapeContainer: {
-    flexDirection: 'column', // Keep as 'column' to prevent affecting GridScreen
-  },
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  portraitButtons: {
-    marginTop: 50,
-    width: '100%',
-  },
-  landscapeButtons: {
-    marginLeft: 50,
-    width: '50%',
-  },
-  startButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-  },
-  retryButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 10,
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  resultContainer: {
-    alignItems: 'center',
-  },
-  resultText: {
-    fontSize: 20,
-    marginVertical: 5,
-  },
-  feedbackText: {
-    fontSize: 18,
-    marginVertical: 10,
-    fontStyle: 'italic',
-    color: '#555',
-    textAlign: 'center',
-  },
-  newBestTimeText: {
-    color: '#28a745', // Green color
-    fontWeight: 'bold',
-  },
-});
 
 export { determineGrade };
 export default App;
