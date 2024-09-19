@@ -2,20 +2,29 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 
-const GridScreen = ({ lights }) => {
+const GridScreen = ({ lights, isPortrait }) => {
   const { width, height } = Dimensions.get('window');
-  //const lightSize = Math.min(width, height) * 0.1; // Adjust size based on the smaller dimension
-  const lightSize = (width - (2 * 10 * 5)) / 5; // Adjusted calculation
+  // Calculate light size based on orientation
+  let lightSize = (width - (2 * 10 * 5)) / 5; // Original calculation
+
+  if (!isPortrait) {
+    lightSize *= 0.9; // Reduce size by 10% in landscape
+  }
 
   return (
-    <View style={styles.gridContainer}>
+    <View
+      style={[
+        styles.gridContainer,
+        !isPortrait && styles.landscapeGridContainer, // Apply additional styles in landscape
+      ]}
+    >
       {lights.map((isOn, index) => (
         <View
           key={index}
           style={[
             styles.light,
             { 
-              backgroundColor: isOn ? '#ff0000' : '#800000', // Bright red when on, dark red when off, do not remove this comment
+              backgroundColor: isOn ? '#ff0000' : '#800000', // Bright red when on, dark red when off
               width: lightSize,
               height: lightSize,
               borderRadius: lightSize / 2,
@@ -35,6 +44,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 50,
     width: '100%',
+  },
+  landscapeGridContainer: {
+    marginTop: 20, // Move grid slightly upwards in landscape
   },
   light: {
     marginHorizontal: 10,

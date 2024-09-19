@@ -489,7 +489,10 @@ const App = () => {
       activeOpacity={1}
       testID="tap-area"
     >
-      <GridScreen lights={state.lightsOn} />
+      <GridScreen 
+        lights={state.lightsOn} 
+        isPortrait={state.isPortrait} // Pass isPortrait prop
+      />
       <View style={[
         styles.buttonContainer, 
         state.isPortrait ? styles.portraitButtons : styles.landscapeButtons
