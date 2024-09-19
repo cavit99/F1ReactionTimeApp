@@ -454,61 +454,69 @@ const App = () => {
     }
   };
 
-  // Function to render feedback based on grade
+  // New component for reaction time and best time
+  const ReactionTimeDisplay = () => (
+    <>
+      {state.reactionTime !== null && state.reactionTime !== -1 && (
+        <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>
+          Your Reaction Time: {state.reactionTime} ms
+        </Text>
+      )}
+      {state.reactionTime === -1 && (
+        <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>
+          Jump Start Detected!
+        </Text>
+      )}
+      {bestTime && state.reactionTime > 0 && (
+        <View style={currentStyles.bestTimeContainer}>
+          <Text
+            style={[
+              currentStyles.resultText,
+              isNewBestTime ? currentStyles.newBestTimeText : null,
+              { color: theme === 'dark' ? '#fff' : '#000' }
+            ]}
+          >
+            Best Time: {bestTime} ms
+          </Text>
+          <TouchableOpacity 
+            style={currentStyles.resetButton} 
+            onPress={resetBestTime}
+          >
+            <Image 
+              source={require('./assets/icons8-reset-100.png')} 
+              style={currentStyles.resetButtonImage} 
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
+  );
+
+  // New component for retry button
+  const RetryButton = ({ style }) => (
+    <TouchableOpacity style={style} onPress={startSequence}>
+      <Text style={currentStyles.buttonText}>Retry</Text>
+    </TouchableOpacity>
+  );
+
+  // Modified renderFeedback function
   const renderFeedback = () => {
     if (!state.grade) return null;
   
-    let feedbackMessage = '';
-    let feedbackColor = '';
-    let showRetry = true;
-  
     const gradeEntry = GRADE_CONFIG.find((g) => g.label === state.grade);
-    if (gradeEntry) {
-      feedbackMessage = gradeEntry.feedbackMessage;
-      feedbackColor = gradeEntry.feedbackColor;
-      showRetry = true; 
-    }
+    if (!gradeEntry) return null;
+
+    const { feedbackMessage, feedbackColor } = gradeEntry;
   
     if (state.isPortrait) {
       // Portrait Layout
       return (
         <View style={currentStyles.resultContainer}>
-          {state.reactionTime !== null && state.reactionTime !== -1 && (
-            <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Your Reaction Time: {state.reactionTime} ms</Text>
-          )}
-          {state.reactionTime === -1 && (
-            <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Jump Start Detected!</Text>
-          )}
-          {bestTime && state.reactionTime > 0 && (
-            <View style={currentStyles.bestTimeContainer}>
-              <Text
-                style={[
-                  currentStyles.resultText,
-                  isNewBestTime ? currentStyles.newBestTimeText : null,
-                  { color: theme === 'dark' ? '#fff' : '#000' }
-                ]}
-              >
-                Best Time: {bestTime} ms
-              </Text>
-              <TouchableOpacity 
-                style={currentStyles.resetButton} 
-                onPress={resetBestTime}
-              >
-                <Image 
-                  source={require('./assets/icons8-reset-100.png')} 
-                  style={currentStyles.resetButtonImage} 
-                />
-              </TouchableOpacity>
-            </View>
-          )}
+          <ReactionTimeDisplay />
           <Text style={[currentStyles.feedbackText, { color: feedbackColor }]}>
             {feedbackMessage}
           </Text>
-          {showRetry && (
-            <TouchableOpacity style={currentStyles.retryButton} onPress={startSequence}>
-              <Text style={currentStyles.buttonText}>Retry</Text>
-            </TouchableOpacity>
-          )}
+          <RetryButton style={currentStyles.retryButton} />
         </View>
       );
     } else {
@@ -516,43 +524,12 @@ const App = () => {
       return (
         <View style={currentStyles.landscapeFeedbackContainer}>
           <View style={currentStyles.feedbackTextContainer}>
-            {state.reactionTime !== null && state.reactionTime !== -1 && (
-              <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Your Reaction Time: {state.reactionTime} ms</Text>
-            )}
-            {state.reactionTime === -1 && (
-              <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Jump Start Detected!</Text>
-            )}
-            {bestTime && state.reactionTime > 0 && (
-              <View style={currentStyles.bestTimeContainer}>
-                <Text
-                  style={[
-                    currentStyles.resultText,
-                    isNewBestTime ? currentStyles.newBestTimeText : null,
-                    { color: theme === 'dark' ? '#fff' : '#000' }
-                  ]}
-                >
-                  Best Time: {bestTime} ms
-                </Text>
-                <TouchableOpacity 
-                  style={currentStyles.resetButton} 
-                  onPress={resetBestTime}
-                >
-                  <Image 
-                    source={require('./assets/icons8-reset-100.png')} 
-                    style={currentStyles.resetButtonImage} 
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
+            <ReactionTimeDisplay />
             <Text style={[currentStyles.feedbackText, { color: feedbackColor }]}>
               {feedbackMessage}
             </Text>
           </View>
-          {showRetry && (
-            <TouchableOpacity style={currentStyles.retryButtonLandscape} onPress={startSequence}>
-              <Text style={currentStyles.buttonText}>Retry</Text>
-            </TouchableOpacity>
-          )}
+          <RetryButton style={currentStyles.retryButtonLandscape} />
         </View>
       );
     }
