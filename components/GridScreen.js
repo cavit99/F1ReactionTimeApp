@@ -8,7 +8,7 @@ const GridScreen = ({ lights, isPortrait }) => {
   let lightSize = (width - (2 * 10 * 5)) / 5; 
 
   if (!isPortrait) {
-    lightSize *= 0.8; // Reduce size in landscape
+    lightSize *= 0.65; // Reduce size in landscape
   }
 
   return (

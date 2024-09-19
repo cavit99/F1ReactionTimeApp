@@ -76,7 +76,7 @@ const baseStyles = {
     borderRadius: 10,
     width: '40%',
     alignItems: 'center',
-    marginLeft: 20,
+    // Remove marginLeft
   },
   landscapeFeedbackContainer: {
     flexDirection: 'row',
@@ -87,7 +87,7 @@ const baseStyles = {
   feedbackTextContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    width: '50%', // Set a fixed width instead of flex: 1
   },
   resetButton: {
     width: 35, 
@@ -187,6 +187,10 @@ const darkStyles = StyleSheet.create({
   resetButton: {
     ...baseStyles.resetButton,
     borderColor: '#fff',
+  },
+  resetButtonImage: {
+    ...baseStyles.resetButtonImage,
+    tintColor: '#fff', // This will invert the image colors
   },
   buttonText: {
     ...baseStyles.buttonText,
