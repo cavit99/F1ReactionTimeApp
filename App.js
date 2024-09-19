@@ -97,7 +97,7 @@ const MIN_RANDOM_DELAY = 200;
 const MAX_RANDOM_DELAY = 3000;
 
 const TOUCH_LATENCY_INITIAL = 60; // Initial touch latency in ms
-const TOUCH_LATENCY_THRESHOLD = 2500; // Threshold in ms to start ramping down
+const TOUCH_LATENCY_THRESHOLD = 2300; // Threshold in ms to start ramping down
 
 const IGNORE_TAP_DELAY_MS = 500;
 
@@ -362,6 +362,18 @@ const App = () => {
     startTimeRef.current = 0; // Reset the start time
   };
 
+  // Function to reset best time
+  const resetBestTime = async () => {
+    try {
+      await AsyncStorage.removeItem('@best_time');
+      setBestTime(null);
+      Alert.alert('Success', 'Best time has been reset.');
+    } catch (e) {
+      console.error('Failed to reset best time.', e);
+      Alert.alert('Error', 'Failed to reset best time.');
+    }
+  };
+
   // Function to render feedback based on grade
   const renderFeedback = () => {
     if (!state.grade) return null;
@@ -407,6 +419,14 @@ const App = () => {
     );
   };
 
+  const logDeviceInfo = () => {
+    console.log(`Running on: ${Platform.OS}`);
+  };
+
+  useEffect(() => {
+    logDeviceInfo();
+  }, []);
+
   return (
     <TouchableOpacity 
       style={[styles.container, state.isPortrait ? styles.portraitContainer : styles.landscapeContainer]} 
@@ -425,6 +445,13 @@ const App = () => {
           </TouchableOpacity>
         )}
         {renderFeedback()}
+        {/* Add Reset Best Time Button */}
+        <TouchableOpacity 
+          style={styles.resetButton} 
+          onPress={resetBestTime}
+        >
+          <Text style={styles.buttonText}>Reset Best Time</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -465,6 +492,13 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  resetButton: {
+    backgroundColor: '#dc3545', // Red color for reset button
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 10,
