@@ -125,6 +125,9 @@ const App = () => {
   const touchLatencyDeductionRef = useRef(TOUCH_LATENCY_INITIAL);
   const sequenceStartTimeRef = useRef(0); // <-- Added ref
 
+  // Ref to track if a sequence is active
+  const isSequenceActiveRef = useRef(false); // <-- Added ref
+
   // Audio references using expo-av
   const f1lightSoundRef = useRef(new Audio.Sound());
   const penaltySoundRef = useRef(new Audio.Sound());
@@ -158,6 +161,8 @@ const App = () => {
     const subscription = Dimensions.addEventListener('change', handleOrientationChange);
 
     loadSounds(); // Start loading sounds
+
+    logDeviceInfo();
 
     return () => {
       if (timeoutRef.current) {
@@ -218,6 +223,7 @@ const App = () => {
 
     resetSequence(false); // Pass false to avoid resetting bestTime
     setState(prevState => ({ ...prevState, sequenceStarted: true }));
+    isSequenceActiveRef.current = true; // <-- Set ref to true
 
     // Record the start time of the sequence using the ref
     sequenceStartTimeRef.current = performance.now();
@@ -299,30 +305,41 @@ const App = () => {
 
   // Function to handle user taps
   const handleTap = () => {
-    if (!state.sequenceStarted) return; // Ignore taps if no sequence is running
+    // Check if a sequence is active using the ref
+    if (!isSequenceActiveRef.current) return; // Ignore taps if no sequence is active
 
     const currentTime = performance.now();
-    if (currentTime - sequenceStartTimeRef.current < IGNORE_TAP_DELAY_MS) {
-      // Ignore the tap if likely mistaken at the start
+    const sequenceStartTime = sequenceStartTimeRef.current;
+
+    if (currentTime - sequenceStartTime < IGNORE_TAP_DELAY_MS) {
+      // Ignore the tap if within the initial ignore delay
       return;
     }
 
     if (!state.readyToTap) {
       // User tapped too early - Jump Start
       clearTimeouts(); // Clear all ongoing timeouts
-      setState(prevState => ({ ...prevState, lightsOn: [false, false, false, false, false] }));
-      setState(prevState => ({ ...prevState, reactionTime: -1 }));
-      setState(prevState => ({ ...prevState, grade: 'Jump Start' }));
+      setState(prevState => ({ 
+        ...prevState, 
+        lightsOn: [false, false, false, false, false],
+        reactionTime: -1,
+        grade: 'Jump Start',
+        sequenceStarted: false,
+        readyToTap: false
+      }));
+      
+      // Set the ref to false since the sequence has ended
+      isSequenceActiveRef.current = false;
+
       Alert.alert('Jump Start!', "You went too early\nStewards wouldn't like it");
 
       // Play penalty sound
       handlePenaltySound();
 
-      setState(prevState => ({ ...prevState, sequenceStarted: false }));
-      setState(prevState => ({ ...prevState, readyToTap: false }));
       return;
     }
 
+    // If readyToTap is true, process the reaction time
     const endTime = performance.now();
     const reaction = endTime - startTimeRef.current;
 
@@ -333,8 +350,15 @@ const App = () => {
     // Ensure reaction time is non-negative
     const validReaction = adjustedReaction >= 0 ? adjustedReaction : 0;
 
-    setState(prevState => ({ ...prevState, reactionTime: Math.round(validReaction) }));
-    setState(prevState => ({ ...prevState, readyToTap: false }));
+    setState(prevState => ({ 
+      ...prevState, 
+      reactionTime: Math.round(validReaction),
+      readyToTap: false,
+      sequenceStarted: false
+    }));
+
+    // Set the ref to false since the sequence has ended
+    isSequenceActiveRef.current = false;
 
     const assignedGrade = determineGrade(validReaction);
     setState(prevState => ({ ...prevState, grade: assignedGrade }));
@@ -380,6 +404,7 @@ const App = () => {
     }
     clearTimeouts(); // Ensure all timeouts are cleared
     startTimeRef.current = 0; // Reset the start time
+    isSequenceActiveRef.current = false; // Ensure the ref is reset
   };
 
   // Function to reset best time
@@ -454,19 +479,21 @@ const App = () => {
     console.log(`Running on: ${Platform.OS}`);
   };
 
-  useEffect(() => {
-    logDeviceInfo();
-  }, []);
-
   return (
     <TouchableOpacity 
-      style={[styles.container, state.isPortrait ? styles.portraitContainer : styles.landscapeContainer]} 
+      style={[
+        styles.container, 
+        state.isPortrait ? styles.portraitContainer : styles.landscapeContainer
+      ]} 
       onPress={handleTap} 
       activeOpacity={1}
       testID="tap-area"
     >
       <GridScreen lights={state.lightsOn} />
-      <View style={[styles.buttonContainer, state.isPortrait ? styles.portraitButtons : styles.landscapeButtons]}>
+      <View style={[
+        styles.buttonContainer, 
+        state.isPortrait ? styles.portraitButtons : styles.landscapeButtons
+      ]}>
         {!state.sequenceStarted && !state.reactionTime && state.grade === '' && (
           <TouchableOpacity 
             style={styles.startButton} 
@@ -557,9 +584,6 @@ const styles = StyleSheet.create({
   bestTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  resetButton: {
-    marginLeft: 10,
   },
   resetButtonImage: {
     width: 20,
