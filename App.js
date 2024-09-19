@@ -10,11 +10,14 @@ import {
   Alert,
   Dimensions,
   Platform,
-  Image 
+  Image,
+  Appearance,
+  useColorScheme
 } from 'react-native';
 import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av'; // Updated import
+import { Audio } from 'expo-av'; 
+import { lightStyles, darkStyles } from './styles'; 
 
 // Configuration for grades and their corresponding feedback
 const GRADE_CONFIG = [
@@ -132,6 +135,40 @@ const App = () => {
   const f1lightSoundRef = useRef(new Audio.Sound());
   const penaltySoundRef = useRef(new Audio.Sound());
 
+  // Theme state
+  const colorScheme = useColorScheme();
+  const [theme, setTheme] = useState(colorScheme);
+  const [isManualTheme, setIsManualTheme] = useState(false); // New state variable
+
+  useEffect(() => {
+    // Log the system's default color scheme
+    console.log(`System default color scheme: ${Appearance.getColorScheme()}`);
+    
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      if (!isManualTheme) { // Only update theme if not manually set
+        setTheme(colorScheme);
+      }
+    });
+
+    logDeviceInfo();
+
+    return () => subscription.remove();
+  }, []); // Empty dependency array to ensure it only runs once
+
+  // Modify the toggleTheme function to log when it's called
+  const toggleTheme = () => {
+    console.log('Toggle theme button pressed');
+    setTheme(prevTheme => {
+      const newTheme = prevTheme === 'dark' ? 'light' : 'dark';
+      setIsManualTheme(true); // User has manually selected theme
+      console.log(`Theme toggled to: ${newTheme}`);
+      return newTheme;
+    });
+  };
+
+  // Determine styles based on theme
+  const currentStyles = theme === 'dark' ? darkStyles : lightStyles;
+
   // Function to load sounds using expo-av
   const loadSounds = async () => {
     try {
@@ -161,8 +198,6 @@ const App = () => {
     const subscription = Dimensions.addEventListener('change', handleOrientationChange);
 
     loadSounds(); // Start loading sounds
-
-    logDeviceInfo();
 
     return () => {
       if (timeoutRef.current) {
@@ -392,7 +427,7 @@ const App = () => {
   };
 
   // Function to reset the sequence
-  // Added `preserveBestTime` parameter to control whether to reset bestTime
+  // Added preserveBestTime` parameter to control whether to reset bestTime
   const resetSequence = (preserveBestTime = true) => {
     if (preserveBestTime) {
       setState(initialState);
@@ -437,40 +472,41 @@ const App = () => {
     if (state.isPortrait) {
       // Portrait Layout
       return (
-        <View style={styles.resultContainer}>
+        <View style={currentStyles.resultContainer}>
           {state.reactionTime !== null && state.reactionTime !== -1 && (
-            <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
+            <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Your Reaction Time: {state.reactionTime} ms</Text>
           )}
           {state.reactionTime === -1 && (
-            <Text style={styles.resultText}>Jump Start Detected!</Text>
+            <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Jump Start Detected!</Text>
           )}
           {bestTime && state.reactionTime > 0 && (
-            <View style={styles.bestTimeContainer}>
+            <View style={currentStyles.bestTimeContainer}>
               <Text
                 style={[
-                  styles.resultText,
-                  isNewBestTime ? styles.newBestTimeText : null
+                  currentStyles.resultText,
+                  isNewBestTime ? currentStyles.newBestTimeText : null,
+                  { color: theme === 'dark' ? '#fff' : '#000' }
                 ]}
               >
                 Best Time: {bestTime} ms
               </Text>
               <TouchableOpacity 
-                style={styles.resetButton} 
+                style={currentStyles.resetButton} 
                 onPress={resetBestTime}
               >
                 <Image 
                   source={require('./assets/icons8-reset-100.png')} 
-                  style={styles.resetButtonImage} 
+                  style={currentStyles.resetButtonImage} 
                 />
               </TouchableOpacity>
             </View>
           )}
-          <Text style={[styles.feedbackText, { color: feedbackColor }]}>
+          <Text style={[currentStyles.feedbackText, { color: feedbackColor }]}>
             {feedbackMessage}
           </Text>
           {showRetry && (
-            <TouchableOpacity style={styles.retryButton} onPress={startSequence}>
-              <Text style={styles.buttonText}>Retry</Text>
+            <TouchableOpacity style={currentStyles.retryButton} onPress={startSequence}>
+              <Text style={currentStyles.buttonText}>Retry</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -478,42 +514,43 @@ const App = () => {
     } else {
       // Landscape Layout
       return (
-        <View style={styles.landscapeFeedbackContainer}>
-          <View style={styles.feedbackTextContainer}>
+        <View style={currentStyles.landscapeFeedbackContainer}>
+          <View style={currentStyles.feedbackTextContainer}>
             {state.reactionTime !== null && state.reactionTime !== -1 && (
-              <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
+              <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Your Reaction Time: {state.reactionTime} ms</Text>
             )}
             {state.reactionTime === -1 && (
-              <Text style={styles.resultText}>Jump Start Detected!</Text>
+              <Text style={[currentStyles.resultText, { color: theme === 'dark' ? '#fff' : '#000' }]}>Jump Start Detected!</Text>
             )}
             {bestTime && state.reactionTime > 0 && (
-              <View style={styles.bestTimeContainer}>
+              <View style={currentStyles.bestTimeContainer}>
                 <Text
                   style={[
-                    styles.resultText,
-                    isNewBestTime ? styles.newBestTimeText : null
+                    currentStyles.resultText,
+                    isNewBestTime ? currentStyles.newBestTimeText : null,
+                    { color: theme === 'dark' ? '#fff' : '#000' }
                   ]}
                 >
                   Best Time: {bestTime} ms
                 </Text>
                 <TouchableOpacity 
-                  style={styles.resetButton} 
+                  style={currentStyles.resetButton} 
                   onPress={resetBestTime}
                 >
                   <Image 
                     source={require('./assets/icons8-reset-100.png')} 
-                    style={styles.resetButtonImage} 
+                    style={currentStyles.resetButtonImage} 
                   />
                 </TouchableOpacity>
               </View>
             )}
-            <Text style={[styles.feedbackText, { color: feedbackColor }]}>
+            <Text style={[currentStyles.feedbackText, { color: feedbackColor }]}>
               {feedbackMessage}
             </Text>
           </View>
           {showRetry && (
-            <TouchableOpacity style={styles.retryButtonLandscape} onPress={startSequence}>
-              <Text style={styles.buttonText}>Retry</Text>
+            <TouchableOpacity style={currentStyles.retryButtonLandscape} onPress={startSequence}>
+              <Text style={currentStyles.buttonText}>Retry</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -527,180 +564,62 @@ const App = () => {
 
   // Modify the return statement to adjust layout based on orientation
   return (
-    <TouchableOpacity 
-      style={[
-        styles.container, 
-        state.isPortrait ? styles.portraitContainer : styles.landscapeContainer
-      ]} 
-      onPress={handleTap} 
-      activeOpacity={1}
-      testID="tap-area"
-    >
-      {/* Position GridScreen differently based on orientation */}
-      <View style={styles.gridScreenWrapper}>
-        <GridScreen 
-          lights={state.lightsOn} 
-          isPortrait={state.isPortrait} // Pass isPortrait prop
-        />
-      </View>
+    <View style={[
+      currentStyles.container, 
+      state.isPortrait ? currentStyles.portraitContainer : currentStyles.landscapeContainer
+    ]}>
+      {/* Theme Toggle Button */}
+      {!state.sequenceStarted && (
+        <TouchableOpacity 
+          style={[
+            currentStyles.themeToggleButton,
+            { zIndex: 3 } // Increased zIndex to ensure it's on top
+          ]} 
+          onPress={toggleTheme}
+          activeOpacity={0.7}
+        >
+          <Text style={currentStyles.themeToggleText}>
+            {theme === 'dark' ? '🌞' : '🌜'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity 
+        style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+        onPress={handleTap} 
+        activeOpacity={1}
+        testID="tap-area"
+        disabled={!state.sequenceStarted} // Disable when sequence hasn't started
+      >
+        <View style={currentStyles.gridScreenWrapper}>
+          <GridScreen 
+            lights={state.lightsOn} 
+            isPortrait={state.isPortrait}
+          />
+        </View>
+      </TouchableOpacity>
       
       <View style={[
-        styles.buttonContainer, 
-        state.isPortrait ? styles.portraitButtons : styles.landscapeButtons
+        currentStyles.buttonContainer, 
+        state.isPortrait ? currentStyles.portraitButtons : currentStyles.landscapeButtons,
+        { zIndex: 2 } // Increased zIndex to ensure buttons are above the tap area
       ]}>
         {!state.sequenceStarted && !state.reactionTime && state.grade === '' && (
           <TouchableOpacity 
-            style={state.isPortrait ? styles.startButton : styles.startButtonLandscape} 
+            style={state.isPortrait ? currentStyles.startButton : currentStyles.startButtonLandscape} 
             onPress={startSequence}
-            disabled={!soundsLoaded} // Disable start if sounds aren't loaded
+            disabled={!soundsLoaded}
           >
-            <Text style={styles.buttonText}>
+            <Text style={currentStyles.buttonText}>
               {soundsLoaded ? 'Start' : 'Loading...'}
             </Text>
           </TouchableOpacity>
         )}
         {renderFeedback()}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
-
-// Update the StyleSheet to include new styles
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    justifyContent: 'flex-start', // Ensure content starts from the top
-    alignItems: 'center', // Center items horizontally
-  },
-  portraitContainer: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  landscapeContainer: {
-    flexDirection: 'column', // Keep stacking vertically
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  gridScreenWrapper: {
-    width: '100%',
-    paddingTop: 30, // Adjusted top padding for portrait
-    paddingBottom: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  portraitButtons: {
-    marginTop: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
-  landscapeButtons: {
-    flexDirection: 'row', // Arrange elements horizontally
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 10,
-  },
-  startButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginTop: 350,
-    width: '60%',
-    alignItems: 'center',
-  },
-  startButtonLandscape: {
-    backgroundColor: '#28a745',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    width: '40%',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  retryButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginTop: 60,
-    width: '60%',
-    alignItems: 'center',
-  },
-  retryButtonLandscape: {
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    width: '40%',
-    alignItems: 'center',
-    marginLeft: 20,
-  },
-  landscapeFeedbackContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  feedbackTextContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  resetButton: {
-    width: 35, 
-    height: 35, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginLeft: 10, 
-    borderWidth: 1, 
-    borderColor: '#000',
-    borderRadius: 5, 
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  resultContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  resultText: {
-    fontSize: 20,
-    marginVertical: 5,
-    textAlign: 'center', // Ensure text is centered
-  },
-  feedbackText: {
-    fontSize: 18,
-    marginVertical: 10,
-    fontStyle: 'italic',
-    color: '#555',
-    textAlign: 'center',
-  },
-  newBestTimeText: {
-    color: '#28a745', // Green color
-    fontWeight: 'bold',
-  },
-  bestTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10, // Add some margin to separate from other elements
-    justifyContent: 'center', // Center best time text and reset button
-  },
-  resetButtonImage: {
-    width: 20,
-    height: 20,
-  },
-});
 
 export { determineGrade };
 export default App;
