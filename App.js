@@ -9,7 +9,8 @@ import {
   Text, 
   Alert,
   Dimensions,
-  Platform 
+  Platform,
+  Image 
 } from 'react-native';
 import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -398,14 +399,25 @@ const App = () => {
           <Text style={styles.resultText}>Jump Start Detected!</Text>
         )}
         {bestTime && state.reactionTime > 0 && (
-          <Text
-            style={[
-              styles.resultText,
-              isNewBestTime ? styles.newBestTimeText : null
-            ]}
-          >
-            Best Time: {bestTime} ms
-          </Text>
+          <View style={styles.bestTimeContainer}>
+            <Text
+              style={[
+                styles.resultText,
+                isNewBestTime ? styles.newBestTimeText : null
+              ]}
+            >
+              Best Time: {bestTime} ms
+            </Text>
+            <TouchableOpacity 
+              style={styles.resetButton} 
+              onPress={resetBestTime}
+            >
+              <Image 
+                source={require('./assets/icons8-reset-100.png')} 
+                style={styles.resetButtonImage} 
+              />
+            </TouchableOpacity>
+          </View>
         )}
         <Text style={[styles.feedbackText, { color: feedbackColor }]}>
           {feedbackMessage}
@@ -445,13 +457,6 @@ const App = () => {
           </TouchableOpacity>
         )}
         {renderFeedback()}
-        {/* Add Reset Best Time Button */}
-        <TouchableOpacity 
-          style={styles.resetButton} 
-          onPress={resetBestTime}
-        >
-          <Text style={styles.buttonText}>Reset Best Time</Text>
-        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -526,6 +531,17 @@ const styles = StyleSheet.create({
   newBestTimeText: {
     color: '#28a745', // Green color
     fontWeight: 'bold',
+  },
+  bestTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resetButton: {
+    marginLeft: 10,
+  },
+  resetButtonImage: {
+    width: 20,
+    height: 20,
   },
 });
 
