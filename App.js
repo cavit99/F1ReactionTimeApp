@@ -117,6 +117,7 @@ const App = () => {
   const [state, setState] = useState(initialState);
   const [bestTime, setBestTime] = useState(null); // Separate state for bestTime
   const [isNewBestTime, setIsNewBestTime] = useState(false); // New state variable
+  const [soundsLoaded, setSoundsLoaded] = useState(false); // New state variable to track sound loading
 
   const startTimeRef = useRef(0);
   const timeoutRef = useRef(null);
@@ -133,8 +134,10 @@ const App = () => {
     try {
       await f1lightSoundRef.current.loadAsync(require('./assets/F1lights.mp3'));
       await penaltySoundRef.current.loadAsync(require('./assets/penalty.wav'));
+      setSoundsLoaded(true); // Update state when sounds are loaded
     } catch (error) {
       console.log('Failed to load sounds', error);
+      Alert.alert('Error', 'Failed to load sounds. Please restart the app.');
     }
   };
 
@@ -154,11 +157,14 @@ const App = () => {
 
     const subscription = Dimensions.addEventListener('change', handleOrientationChange);
 
-    loadSounds();
+    loadSounds(); // Start loading sounds
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (sequenceRef.current) {
+        clearTimeout(sequenceRef.current);
       }
       if (subscription && subscription.remove) {
         subscription.remove();
@@ -205,6 +211,11 @@ const App = () => {
 
   // Function to start the light sequence
   const startSequence = async () => {
+    if (!soundsLoaded) {
+      Alert.alert('Loading', 'Sounds are still loading. Please wait.');
+      return;
+    }
+
     resetSequence(false); // Pass false to avoid resetting bestTime
     setState(prevState => ({ ...prevState, sequenceStarted: true }));
 
@@ -249,7 +260,7 @@ const App = () => {
 
   // Helper function to illuminate a single light
   const illuminateLight = (index, delay) => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       timeoutRef.current = setTimeout(async () => {
         setState(prevState => {
           const newLights = [...prevState.lightsOn];
@@ -259,7 +270,11 @@ const App = () => {
 
         // Play F1 lights sound using expo-av
         try {
-          await f1lightSoundRef.current.replayAsync();
+          if (soundsLoaded) {
+            await f1lightSoundRef.current.replayAsync();
+          } else {
+            console.log('F1 lights sound is not loaded yet.');
+          }
         } catch (error) {
           console.log('F1lights sound playback failed', error);
         }
@@ -270,9 +285,13 @@ const App = () => {
   };
 
   // Handle penalty sound playback
-  const handlePenalitySound = async () => {
+  const handlePenaltySound = async () => {
     try {
-      await penaltySoundRef.current.replayAsync();
+      if (soundsLoaded) {
+        await penaltySoundRef.current.replayAsync();
+      } else {
+        console.log('Penalty sound is not loaded yet.');
+      }
     } catch (error) {
       console.log('Penalty sound playback failed', error);
     }
@@ -297,7 +316,7 @@ const App = () => {
       Alert.alert('Jump Start!', "You went too early\nStewards wouldn't like it");
 
       // Play penalty sound
-      handlePenalitySound();
+      handlePenaltySound();
 
       setState(prevState => ({ ...prevState, sequenceStarted: false }));
       setState(prevState => ({ ...prevState, readyToTap: false }));
@@ -452,8 +471,11 @@ const App = () => {
           <TouchableOpacity 
             style={styles.startButton} 
             onPress={startSequence}
+            disabled={!soundsLoaded} // Disable start if sounds aren't loaded
           >
-            <Text style={styles.buttonText}>Start</Text>
+            <Text style={styles.buttonText}>
+              {soundsLoaded ? 'Start' : 'Loading...'}
+            </Text>
           </TouchableOpacity>
         )}
         {renderFeedback()}
