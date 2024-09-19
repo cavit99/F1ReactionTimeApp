@@ -18,6 +18,9 @@ import GridScreen from './components/GridScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av'; 
 import { lightStyles, darkStyles } from './styles'; 
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 // Configuration for grades and their corresponding feedback
 const GRADE_CONFIG = [
@@ -538,6 +541,15 @@ const App = () => {
   const logDeviceInfo = () => {
     console.log(`Running on: ${Platform.OS}`);
   };
+
+  useEffect(() => {
+    const hideSplashScreen = async () => {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds delay
+      await SplashScreen.hideAsync();
+    };
+
+    hideSplashScreen();
+  }, []);
 
   // Modify the return statement to adjust layout based on orientation
   return (
