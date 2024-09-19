@@ -55,7 +55,7 @@ const GRADE_CONFIG = [
   {
     label: 'Very Good',
     condition: (time) => time >= 251 && time <= 270,
-    feedbackMessage: 'Very Good!\nLikea good reaction from an F1 driver',
+    feedbackMessage: 'Very Good!\nLike a good reaction from an F1 driver',
     feedbackColor: '#17a2b8', // Teal
     includeInBestTime: true,
   },
