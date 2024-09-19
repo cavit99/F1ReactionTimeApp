@@ -552,11 +552,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   resetButton: {
-    backgroundColor: '#dc3545', // Red color for reset button
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 10,
-    marginTop: 20,
+    width: 40, 
+    height: 40, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginLeft: 20, 
+    borderWidth: 1, 
+    borderColor: '#000',
+    borderRadius: 5, 
   },
   buttonText: {
     color: '#fff',
@@ -584,6 +587,7 @@ const styles = StyleSheet.create({
   bestTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 10, // Add some margin to separate from other elements
   },
   resetButtonImage: {
     width: 20,
