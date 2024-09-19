@@ -478,8 +478,8 @@ const App = () => {
     } else {
       // Landscape Layout
       return (
-        <View style={styles.resultContainerLandscape}>
-          <View style={styles.textContainer}>
+        <View style={styles.landscapeFeedbackContainer}>
+          <View style={styles.feedbackTextContainer}>
             {state.reactionTime !== null && state.reactionTime !== -1 && (
               <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
             )}
@@ -550,7 +550,7 @@ const App = () => {
       ]}>
         {!state.sequenceStarted && !state.reactionTime && state.grade === '' && (
           <TouchableOpacity 
-            style={styles.startButton} 
+            style={state.isPortrait ? styles.startButton : styles.startButtonLandscape} 
             onPress={startSequence}
             disabled={!soundsLoaded} // Disable start if sounds aren't loaded
           >
@@ -570,72 +570,97 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
+    justifyContent: 'flex-start', // Ensure content starts from the top
+    alignItems: 'center', // Center items horizontally
   },
   portraitContainer: {
     flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   landscapeContainer: {
-    flexDirection: 'column', 
-    alignItems: 'flex-start', // Align items to the top
-    justifyContent: 'space-between', // Space between GridScreen and buttons/feedback
-  },
-  retryButtonLandscape: {
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 10,
-    marginTop: 0,
-    marginLeft: 20,
-  },
-  resultContainerLandscape: {
-    flexDirection: 'row',
+    flexDirection: 'column', // Keep stacking vertically
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   gridScreenWrapper: {
-    flex: 1,
-    justifyContent: 'flex-start', // Align GridScreen to the top in landscape
-    marginBottom: 20, // Add some spacing if needed
-  },
-  buttonContainer: {
+    width: '100%',
+    paddingTop: 30, // Adjusted top padding for portrait
+    paddingBottom: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1, // Take remaining space
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   portraitButtons: {
-    marginTop: 50,
-    width: '100%',
+    marginTop: 20,
+    width: '80%',
+    alignItems: 'center',
   },
   landscapeButtons: {
-    marginLeft: 50,
-    width: '50%',
+    flexDirection: 'row', // Arrange elements horizontally
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 10,
   },
   startButton: {
     backgroundColor: '#28a745',
-    paddingVertical: 20,
-    paddingHorizontal: 40,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderRadius: 10,
+    marginTop: 350,
+    width: '60%',
+    alignItems: 'center',
+  },
+  startButtonLandscape: {
+    backgroundColor: '#28a745',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    width: '40%',
+    alignItems: 'center',
+    marginRight: 20,
   },
   retryButton: {
     backgroundColor: '#007bff',
-    paddingVertical: 20,
-    paddingHorizontal: 40,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderRadius: 10,
-    marginTop: 20,
+    marginTop: 60,
+    width: '60%',
+    alignItems: 'center',
+  },
+  retryButtonLandscape: {
+    backgroundColor: '#007bff',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    width: '40%',
+    alignItems: 'center',
+    marginLeft: 20,
+  },
+  landscapeFeedbackContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  feedbackTextContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   resetButton: {
-    width: 55, 
-    height: 44, 
+    width: 35, 
+    height: 35, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginLeft: 20, 
+    marginLeft: 10, 
     borderWidth: 1, 
     borderColor: '#000',
     borderRadius: 5, 
@@ -647,10 +672,12 @@ const styles = StyleSheet.create({
   },
   resultContainer: {
     alignItems: 'center',
+    width: '100%',
   },
   resultText: {
     fontSize: 20,
     marginVertical: 5,
+    textAlign: 'center', // Ensure text is centered
   },
   feedbackText: {
     fontSize: 18,
@@ -667,6 +694,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10, // Add some margin to separate from other elements
+    justifyContent: 'center', // Center best time text and reset button
   },
   resetButtonImage: {
     width: 20,

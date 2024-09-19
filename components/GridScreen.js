@@ -5,10 +5,10 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 const GridScreen = ({ lights, isPortrait }) => {
   const { width, height } = Dimensions.get('window');
   // Calculate light size based on orientation
-  let lightSize = (width - (2 * 10 * 5)) / 5; // Original calculation
+  let lightSize = (width - (2 * 10 * 5)) / 5; 
 
   if (!isPortrait) {
-    lightSize *= 0.9; // Reduce size by 10% in landscape
+    lightSize *= 0.8; // Reduce size in landscape
   }
 
   return (
@@ -42,11 +42,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', // Always horizontal
     justifyContent: 'space-around',
     alignItems: 'center',
-    marginTop: 50,
+    marginTop: 150, 
     width: '100%',
   },
   landscapeGridContainer: {
-    marginTop: 20, // Move grid slightly upwards in landscape
+    marginTop: 40, 
   },
   light: {
     marginHorizontal: 10,
