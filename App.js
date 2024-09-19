@@ -422,57 +422,103 @@ const App = () => {
   // Function to render feedback based on grade
   const renderFeedback = () => {
     if (!state.grade) return null;
-
+  
     let feedbackMessage = '';
     let feedbackColor = '';
     let showRetry = true;
-
+  
     const gradeEntry = GRADE_CONFIG.find((g) => g.label === state.grade);
     if (gradeEntry) {
       feedbackMessage = gradeEntry.feedbackMessage;
       feedbackColor = gradeEntry.feedbackColor;
       showRetry = true; 
     }
-
-    return (
-      <View style={styles.resultContainer}>
-        {state.reactionTime !== null && state.reactionTime !== -1 && (
-          <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
-        )}
-        {state.reactionTime === -1 && (
-          <Text style={styles.resultText}>Jump Start Detected!</Text>
-        )}
-        {bestTime && state.reactionTime > 0 && (
-          <View style={styles.bestTimeContainer}>
-            <Text
-              style={[
-                styles.resultText,
-                isNewBestTime ? styles.newBestTimeText : null
-              ]}
-            >
-              Best Time: {bestTime} ms
-            </Text>
-            <TouchableOpacity 
-              style={styles.resetButton} 
-              onPress={resetBestTime}
-            >
-              <Image 
-                source={require('./assets/icons8-reset-100.png')} 
-                style={styles.resetButtonImage} 
-              />
+  
+    if (state.isPortrait) {
+      // Portrait Layout
+      return (
+        <View style={styles.resultContainer}>
+          {state.reactionTime !== null && state.reactionTime !== -1 && (
+            <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
+          )}
+          {state.reactionTime === -1 && (
+            <Text style={styles.resultText}>Jump Start Detected!</Text>
+          )}
+          {bestTime && state.reactionTime > 0 && (
+            <View style={styles.bestTimeContainer}>
+              <Text
+                style={[
+                  styles.resultText,
+                  isNewBestTime ? styles.newBestTimeText : null
+                ]}
+              >
+                Best Time: {bestTime} ms
+              </Text>
+              <TouchableOpacity 
+                style={styles.resetButton} 
+                onPress={resetBestTime}
+              >
+                <Image 
+                  source={require('./assets/icons8-reset-100.png')} 
+                  style={styles.resetButtonImage} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+          <Text style={[styles.feedbackText, { color: feedbackColor }]}>
+            {feedbackMessage}
+          </Text>
+          {showRetry && (
+            <TouchableOpacity style={styles.retryButton} onPress={startSequence}>
+              <Text style={styles.buttonText}>Retry</Text>
             </TouchableOpacity>
+          )}
+        </View>
+      );
+    } else {
+      // Landscape Layout
+      return (
+        <View style={styles.resultContainerLandscape}>
+          <View style={styles.textContainer}>
+            {state.reactionTime !== null && state.reactionTime !== -1 && (
+              <Text style={styles.resultText}>Your Reaction Time: {state.reactionTime} ms</Text>
+            )}
+            {state.reactionTime === -1 && (
+              <Text style={styles.resultText}>Jump Start Detected!</Text>
+            )}
+            {bestTime && state.reactionTime > 0 && (
+              <View style={styles.bestTimeContainer}>
+                <Text
+                  style={[
+                    styles.resultText,
+                    isNewBestTime ? styles.newBestTimeText : null
+                  ]}
+                >
+                  Best Time: {bestTime} ms
+                </Text>
+                <TouchableOpacity 
+                  style={styles.resetButton} 
+                  onPress={resetBestTime}
+                >
+                  <Image 
+                    source={require('./assets/icons8-reset-100.png')} 
+                    style={styles.resetButtonImage} 
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+            <Text style={[styles.feedbackText, { color: feedbackColor }]}>
+              {feedbackMessage}
+            </Text>
           </View>
-        )}
-        <Text style={[styles.feedbackText, { color: feedbackColor }]}>
-          {feedbackMessage}
-        </Text>
-        {showRetry && (
-          <TouchableOpacity style={styles.retryButton} onPress={startSequence}>
-            <Text style={styles.buttonText}>Retry</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
+          {showRetry && (
+            <TouchableOpacity style={styles.retryButtonLandscape} onPress={startSequence}>
+              <Text style={styles.buttonText}>Retry</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
   };
 
   const logDeviceInfo = () => {
@@ -536,6 +582,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start', // Align items to the top
     justifyContent: 'space-between', // Space between GridScreen and buttons/feedback
   },
+  retryButtonLandscape: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    marginTop: 0,
+    marginLeft: 20,
+  },
+  resultContainerLandscape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   gridScreenWrapper: {
     flex: 1,
     justifyContent: 'flex-start', // Align GridScreen to the top in landscape
@@ -556,14 +619,14 @@ const styles = StyleSheet.create({
   },
   startButton: {
     backgroundColor: '#28a745',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
+    paddingVertical: 20,
+    paddingHorizontal: 40,
     borderRadius: 10,
   },
   retryButton: {
     backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
+    paddingVertical: 20,
+    paddingHorizontal: 40,
     borderRadius: 10,
     marginTop: 20,
   },
